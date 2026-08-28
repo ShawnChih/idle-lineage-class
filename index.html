@@ -17,6 +17,9 @@
     <link rel="stylesheet" href="css/style.css?v=v3.8.6-npc-private-chat">
     <link rel="stylesheet" href="css/floating-ui.css?v=v3.5.100-audit-tail">
     <link rel="stylesheet" href="css/tailwind-built.css"><!-- 🔧 預編譯 Tailwind（取代執行期 JIT tailwind.js）：只含實際用到的 class，省 407KB runtime + 移除持續掃描 DOM 的成本。置於 style.css 之後以保留原 cascade（utility 平手時勝過自訂 class，與舊 JIT 注入順序一致） -->
+    <!-- 個人偏好：隱藏核心的非官方網域提示橫幅(#_orig_pbar)。只用 CSS 藏起來、不刪元素——
+         js/00-data.js 的 _origEnforce() 每輪 gameLoop 只檢查該 id 存不存在，元素還在就不會重掛。 -->
+    <style>#_orig_pbar{display:none !important}</style>
 </head>
 <body class="h-screen w-screen overflow-hidden">
 
