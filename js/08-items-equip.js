@@ -1485,7 +1485,7 @@ function _updateUIImpl() {
     // 額外傷害/命中：折入近距離與遠距離的顯示（兩者都 +）
     let _ed = player.d.extraDmg || 0, _eh = player.d.extraHit || 0;
     // 近距離
-    document.getElementById('dt-mdmg').innerText = sign(player.d.meleeDmg + _ed);
+    document.getElementById('dt-mdmg').innerText = sign(player.d.meleeDmg + _ed + (player.d.meleeDmgFlat || 0));   // 🔁 meleeDmgFlat(粉碎精通)不進 physCoef,但仍是玩家看得到的真實加成,顯示要併入
     document.getElementById('dt-mhit').innerText = sign(player.d.meleeHit + _eh);
     document.getElementById('dt-mcrit-p').innerText = `${player.d.meleeCrit}%`;
     { let _el = document.getElementById('dt-mcritdmg'); if (_el) _el.innerText = `${player.d.meleeCritDmg || 0}%`; }

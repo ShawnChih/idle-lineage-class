@@ -2283,6 +2283,24 @@ function consumeWetMult(target, ele) {
     if (target && ele === 'wind' && (target._wetUntil || 0) > state.ticks) { target._wetUntil = 0; return 2; }
     return 1;
 }
+/**
+ * 計算目標 AC 對物理傷害的百分比折減係數 —— 直接沿用 mrMult()（js/08）那條折減曲線，
+ * 只把 AC 換算成「等效 MR」餵進去，讓物理／魔法吃同一條曲線，真正做到兩者可比。
+ *
+ * 換算依據 gap*2（用全遊戲 1095 隻怪的 ac 欄位＋581 隻怪的 mr 欄位實測校準，不是憑空假設）：
+ *   遊戲裡 AC 實際落在 0 ~ -140（gap 0~150），MR 實際落在 0 ~ 300 —— 兩邊「最硬檔次」剛好差
+ *   2 倍，gap*2 讓 AC10/AC0/AC-40 三個基準點各自對上 mrMult(0)=1.0、mrMult(20)=0.9、
+ *   mrMult(100)=0.5，與最初的三個範例值完全吻合；但不會像原本「gap>50 就打死 0.05」那樣過早
+ *   觸底——原本那條曲線下，AC<=-40 的怪物佔全部 1095 隻裡的 17%（187 隻），等於六分之一的怪物
+ *   物理傷害會被砍到只剩 5%，比魔法對應的 mrMult 在全遊戲實際 MR 範圍內最低也只到 0.325（MR
+ *   300，遊戲裡最硬的目標）誇張太多——物理反而比魔法更弱，跟「平衡物理／魔法」的目標相反。
+ *   換算後，遊戲最硬的 AC 目標（-140，gap150→等效 MR300）同樣落在 0.325，跟魔法最硬目標打平。
+ */
+function acPhysMult(ac) {
+    let gap = Math.max(0, 10 - Number(ac != null ? ac : 10));
+    return mrMult(gap * 2);
+}
+
 function getPhysicalDmg(diceStr, target, wpn, arrowData, forceHeavy, forceHit, forceLand, forceCrit, wpnInst, forceGraze, probe) {
     let isRanged = !!(wpn && wpn.ranged);
     let hitBonus = (isRanged ? player.d.rangedHit : player.d.meleeHit) + player.d.extraHit + (player._skillHitBonus || 0);   // 🗼 范德之劍：施展衝擊之暈時本次技能近距離命中+1
@@ -2339,15 +2357,29 @@ function getPhysicalDmg(diceStr, target, wpn, arrowData, forceHeavy, forceHit, f
     let _flameSoulMax = (!isRanged && player.buffs && player.buffs.sk_elf_flamesoul > 0);
     let weaponRoll = (heavy || _flameSoulMax) ? diceStr : roll(1, diceStr);
 
-    // [（遠/近距離傷害 x 爆擊係數） + 額外傷害 - 敵人傷害減免]，計算過程最低為1
-    let nearFar = weaponRoll + dmgBonus;
+    // 🔁 物理傷害底層公式（威力係數乘算＋AC 百分比折減，比照魔法傷害 SP 係數/MR 折減的架構）
     let _ignHard = !!(_cw && _cw.ignHardSkin);   // 🗡️ 貫穿（暗黑十字弓）：攻擊無視硬皮額外減傷（主攻擊與連射皆走本函式 → 一併涵蓋）
-    let inner = Math.floor(nearFar * critMult) + player.d.extraDmg - ((target.dr || 0) + (_ignHard ? 0 : mobHardSkin(target)) + ((target._siegeDrEnd > state.ticks) ? (target._siegeDrVal || 0) : 0));   // 堅固防護：怪物傷害減免；🔧 硬皮：額外物理減傷（貫穿時不扣）
-    inner = Math.max(1, inner);
+    let targetAc = mobEffAC(target);
+    let acFactor = acPhysMult(targetAc);
+
+    // 1. 基礎傷害 = 武器骰 + 額外傷害 (extraDmg)
+    let innerBase = weaponRoll + player.d.extraDmg;
+
+    // 2. 物理威力係數（比照智力 SP 係數：1 + dmgBonus * 3 / 32）
+    let physCoef = 1 + (dmgBonus * 3 / 32);
+
+    // 3. 乘法放大並套用 AC 百分比折減
+    let rawPhys = innerBase * physCoef * critMult * acFactor;
+
+    // 4. 扣除固定減傷（DR + 硬皮 + 攻城減免），計算過程最低為1
+    let flatReduct = (target.dr || 0) + (_ignHard ? 0 : mobHardSkin(target)) + ((target._siegeDrEnd > state.ticks) ? (target._siegeDrVal || 0) : 0);   // 堅固防護：怪物傷害減免；🔧 硬皮：額外物理減傷（貫穿時不扣）
+    let inner = Math.max(1, Math.floor(rawPhys) - flatReduct);
+
     if (target._trauma && target._trauma.until > state.ticks) inner += (target._trauma.dmg || 5) * (target._trauma.s || 1);   // 🏺 v3.7.20 創傷（戰士的漆黑之劍）：目標受到的所有物理傷害 +5×層數（玩家物理樞紐·傭兵側 allyStrikeRoll 另掛）
 
     // 固定傷害（屬性/特效，於最低1之後加上）
     let fixed = 0;
+    if (!isRanged) fixed += (player.d.meleeDmgFlat || 0);   // ⚔️ 粉碎精通：無等級上限的固定加算，不進 physCoef（見 js/02 sk_warrior_crush 註解）
 
     // 0. 屬性詞綴（v3.0.77 五階制）：額外傷害/魔法點數已改走 recompute（d.extraDmg/d.extraMp·見 js/02），此處只取屬性供剋制倍率（下方 _outDmg ×1.4/×0.6）
     let _attrInst = (wpnInst && wpnInst.attr) ? wpnInst : player.eq.wpn;   // ⚔️ 指定揮擊武器（副手＝offwpn）自身有屬性詞綴則用其屬性，否則沿用主武器（純加成、不減損既有行為）

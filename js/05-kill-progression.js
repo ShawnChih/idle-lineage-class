@@ -958,7 +958,7 @@ function _antReadSlotStats(slotN) {   // 輕量讀取存檔位角色能力快照
         if (!!p.classicMode !== !!player.classicMode) return null;
         let d = p.d || {};
         return { slot: String(slotN), enSeed: p.enSeed || ('legacy|' + (p.name || '') + '|' + p.cls), name: p.name || ('存檔' + slotN), lv: p.lv || 1, mr: d.mr || 0, resEarth: d.resEarth || 0,
-                 meleeDmg: d.meleeDmg || 0, rangedDmg: d.rangedDmg || 0, magicDmg: d.magicDmg || 0, sp: (d.intSp || 0) + (d.itemSp || 0) };
+                 meleeDmg: (d.meleeDmg || 0) + (d.meleeDmgFlat || 0), rangedDmg: d.rangedDmg || 0, magicDmg: d.magicDmg || 0, sp: (d.intSp || 0) + (d.itemSp || 0) };
     } catch (e) { return null; }
 }
 function antharasHelperAssign(role, slotN) {

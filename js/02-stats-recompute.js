@@ -59,7 +59,7 @@ function recomputeStats() {
     d.cha = (b.cha || 0) + (a.cha || 0) + (pn.cha||0);   // 魅力：第六屬性（配點＋萬能藥本就≤60；裝備／buff 可突破 60）
 
     d.ac = 10; d.er = 0; d.dr = 0;
-    d.meleeDmg = 0; d.meleeHit = 0; d.meleeCrit = 0;
+    d.meleeDmg = 0; d.meleeHit = 0; d.meleeCrit = 0; d.meleeDmgFlat = 0;   // 🔁 meleeDmgFlat：不吃 physCoef 乘算的固定加算（目前只有粉碎精通用，見下方 sk_warrior_crush）
     d.crushDr = 0; d.meleeHaste = 0; d.atkSpdPct = 0;   // 🏺 遺物 第二批：受重擊減傷% / 裝近戰武器攻速% / 通用攻速%
     d.hpRegenFaster = 0; d.noEvade = false;   // 🏺 遺物 第十六批：巨魔的再生戒指（HP恢復間隔縮短秒數）／笨重的鋼鐵石盾（無法迴避）
     d.critDmgLowHp = null;   // 🏺 遺物 第十七批：鬥士的決戰服裝（HP<N 時近爆傷+add）
@@ -552,7 +552,7 @@ d.mr += (baseMr + bonusMr);
 
     // 🏅 生存精通：MR+15（藥水恢復 +25% 於 useItem 套用）
     if (p.mastery === 'k_survive') d.mr += 15;
-    if (player.skills.includes('sk_warrior_crush')) d.meleeDmg += 2 + Math.max(0, p.lv - 44);   // ⚔️ 粉碎：近距離傷害+2；玩家等級45起每升一級+1
+    if (player.skills.includes('sk_warrior_crush')) d.meleeDmgFlat += 2 + Math.max(0, p.lv - 44);   // ⚔️ 粉碎：近距離傷害+2；玩家等級45起每升一級+1。🔁 走 meleeDmgFlat 不進 physCoef：這條無上限隨等級線性成長(lv100=+58)，若併入會被 physCoef 乘算放大，讓粉碎戰士的輸出遠超其他物理/魔法流派(實測+54%)，故改為與 unBonus/giantBonus 同層的「命中後才加」固定值
     
     let spdMult = 1.0;
     let _mercPots = !!p._mercPermanentPotions;   // 🤝 傭兵預設常駐職業藥水效果（不消耗道具、不寫入一般 buff 計時）

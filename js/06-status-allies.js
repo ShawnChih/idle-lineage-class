@@ -1569,7 +1569,14 @@ function allyStrikeRoll(ally, t, opts) {
     let isCrit = !graze && (opts.forceCrit || (Math.random()*100 < critR));   // 🏅 反擊精通（傭兵）：反擊/居合必定爆擊；🥊 v2.6.20 擦傷不爆
     let critMult = isCrit ? (1 + critD/100) : 1;
     let wpnRoll = (heavy || (!isRanged && ally.buffs && ally.buffs.sk_elf_flamesoul > 0)) ? dice : roll(1, dice);   // 🔥 v3.1.77 烈焰之魂（傭兵·連擊/反擊/居合/副手共用·鏡像玩家 js/03:861）
-    let dmg = Math.max(1, Math.floor((wpnRoll + dmgB) * critMult) + (d.extraDmg||0) - (t.dr||0) - mobHardSkin(t));   // 🔧 硬皮：額外物理減傷
+    // 🔁 物理傷害底層公式（威力係數乘算＋AC 百分比折減，鏡像玩家 js/03 getPhysicalDmg 的 acPhysMult 架構）
+    let targetAc = mobEffAC(t, ally);
+    let acFactor = acPhysMult(targetAc);
+    let innerBase = wpnRoll + (d.extraDmg || 0);
+    let physCoef = 1 + (dmgB * 3 / 32);
+    let rawPhys = innerBase * physCoef * critMult * acFactor;
+    let flatReduct = (t.dr || 0) + mobHardSkin(t);   // 🔧 硬皮：額外物理減傷
+    let dmg = Math.max(1, Math.floor(rawPhys) - flatReduct);
     { let _unb = allyUnbonusBonus(ally, t); if (_unb) dmg += _unb; }   // 🔧 對不死/狼人加成 +1D20（與玩家一致；連擊/魔擊共用此計算）
     if (opts.mult) dmg = Math.max(1, Math.floor(dmg * opts.mult));
     if (graze) dmg = Math.max(1, Math.floor(dmg * 0.5));   // 🥊 v2.6.20 擦傷 50%（鏡像玩家 833）
