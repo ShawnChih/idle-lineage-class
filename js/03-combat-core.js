@@ -2828,6 +2828,46 @@ function procCombo(t, fullDmg) {
     if (t.curHp <= 0) { if (idx !== -1) killMob(idx); }
     else renderMobs();
 }
+// ===== 🔁 覺醒（遺物／傳說物理武器版共鳴）：持相應武器時，一般攻擊(不論命中與否)有 STR/DEX÷60 機率
+//   免費額外發動一次「必中」的完整物理攻擊——直接對齊法杖共鳴(wandLightArrowProc/procLightArrow)的
+//   觸發時機與必中特性，讓「拿頂級物理武器」也能取得跟「拿魔杖」對等的第二次保底輸出。
+//   ⚠️ 獨立於 eff（切割/穿透/鈍擊/雙擊…），不覆蓋、不互斥——鋼爪/雙刀類遺物本身若帶 eff:'combo'，
+//   兩個機制各自判定各自觸發，疊加無妨（範圍限定就是「遺物/傳說」這個門檻本身，不分武器族） =====
+function isPhysResonanceWpn(wpnDef) {
+    if (!wpnDef || wpnDef.type !== 'wpn') return false;
+    if (!(wpnDef.relic || wpnDef.legend)) return false;
+    if (wpnDef.isWand || wpnDef.qigu) return false;   // 排除魔杖/奇古獸類（法師/幻術士施法武器）
+    if (/魔杖|法杖/.test(wpnDef.n || '')) return false;
+    return true;
+}
+function physResonanceProc(target) {
+    if (player.classicMode) return;   // 🎮 經典模式：停用（比照共鳴/連擊）
+    let wpnInst = player.eq.wpn;
+    let wpnDef = wpnInst ? DB.items[wpnInst.id] : null;
+    if (!isPhysResonanceWpn(wpnDef)) return;
+    let isRanged = !!(wpnDef.ranged || wpnDef.isBow);
+    let chance = Math.min(1, ((isRanged ? player.d.dex : player.d.str) || 0) / 60);   // 封頂 100%，公式對齊共鳴的 智力/60
+    if (Math.random() >= chance) return;
+    let t = (target && target.curHp > 0) ? target : null;
+    if (!t) {
+        let alive = mapState.mobs.filter(m => m && m.curHp > 0);
+        if (alive.length === 0) return;
+        t = alive[Math.floor(Math.random() * alive.length)];
+    }
+    let dice = t.s === 'L' ? wpnDef.dmgL : wpnDef.dmgS;
+    let res = getPhysicalDmg(dice, t, wpnDef, null, false, true, false, false, wpnInst, false, false);   // forceHit=true：必中；不強制重擊/爆擊（比照反擊，各自正常擲）
+    if (!res.hit) return;   // 理論上必中，防禦性判斷保留
+    t.curHp -= res.dmg;
+    if (typeof terrorVisageOnDamage === 'function') terrorVisageOnDamage(t, res.dmg, 'melee');
+    t.justHit = getWpnEle(player.eq.wpn, wpnDef);
+    mobWake(t);
+    if (t.curHp > 0) wearHardSkin(t, player.eq.wpn ? player.eq.wpn.id : null, res.heavy, false, true, player.classicMode);
+    let mark = (res.heavy && res.crit) ? '會心一擊' : (res.crit ? '爆擊' : (res.heavy ? '重擊' : ''));
+    logCombat(`<span class="font-bold" style="color:#fca5a5;text-shadow:0 0 6px #dc2626;">【覺醒】</span>對 <span class="${getMobColor(t.lv)}">${t.n}</span> 造成 ${res.dmg} 點傷害${mark ? '（' + mark + '!）' : ''}。`, 'player');
+    let idx = mapState.mobs.findIndex(m => m && m.uid === t.uid);
+    if (t.curHp <= 0) { if (idx !== -1) killMob(idx); }
+    else renderMobs();
+}
 // ⚔️ 戰士可作雙持的武器：單手鈍器；🏅 巨斧精通(k_giantaxe)時雙手鈍器亦可（雙手鈍器單手化）
 function warriorDualWieldWpnOk(id) {
     if (!id) return false;

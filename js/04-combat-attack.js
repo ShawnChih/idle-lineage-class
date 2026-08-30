@@ -305,6 +305,9 @@ function playerAttack() {
     // 法杖共鳴：一般攻擊(命中或未命中皆然)依機率免費施展光箭
     wandLightArrowProc(target);
 
+    // 覺醒（遺物/傳說物理武器）：一般攻擊(命中或未命中皆然)依機率免費追加一次必中攻擊，對齊法杖共鳴
+    physResonanceProc(target);
+
     // 魔擊：一般攻擊(命中或未命中皆然)依機率追加一次必定命中重擊
     magicStrikeProc(target);
 
