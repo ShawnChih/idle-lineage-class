@@ -1955,6 +1955,7 @@ window.onload = () => {
             if(d.slowedBonusDmg) _eff.push(`緩速專攻（攻擊緩速目標額外傷害+${d.slowedBonusDmg}）`);
             if(d.immParalyzeBonusDmg) _eff.push(`強韌專攻（攻擊免疫麻痺目標額外傷害+${d.immParalyzeBonusDmg}）`);
             if(typeof WAND_LIGHTARROW_IDS !== 'undefined' && WAND_LIGHTARROW_IDS.includes(id)) _eff.push('共鳴（攻擊時依智力免費施放光箭）');
+            if(typeof isPhysResonanceWpn === 'function' && isPhysResonanceWpn(d)) _eff.push('覺醒（攻擊時依力量／敏捷免費追加一次必中攻擊）');
             // 🔧 武器標籤特效（反擊/居合/鈍擊/出血）：來自 WEAPON_TAGS（非 eff 欄位），與背包資訊欄一致顯示
             if(d.type === 'wpn' && typeof getWeaponTags === 'function'){
                 if(typeof weaponHasBleed === 'function' && weaponHasBleed(id)) _eff.push('出血（命中疊加8秒流血，每秒造成該次傷害20%）');

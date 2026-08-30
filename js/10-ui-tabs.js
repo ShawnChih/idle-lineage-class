@@ -1149,6 +1149,7 @@ function buildItemDescHTML(item) {
         if (typeof getWeaponTags === 'function' && getWeaponTags(item.id).includes('雙刀')) _eff.push('雙刃（有機率造成雙倍傷害）');
         if (typeof getWeaponTags === 'function' && getWeaponTags(item.id).includes('鋼爪')) _eff.push('重擊 +5%（重擊取武器最大傷害）');
         if (typeof WAND_LIGHTARROW_IDS !== 'undefined' && WAND_LIGHTARROW_IDS.includes(item.id)) _eff.push('共鳴（攻擊時依智力免費施放光箭）');
+        if (typeof isPhysResonanceWpn === 'function' && isPhysResonanceWpn(d)) _eff.push('覺醒（攻擊時依力量／敏捷免費追加一次必中攻擊）');
         _eff.push(...weaponPurposeLabels(d));
         if (d.relic) _eff.push(...relicPurposeLabels(d));
         _eff = dedupeGeneratedTooltipEffects([...new Set(_eff)], d, { main:true });
