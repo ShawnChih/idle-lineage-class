@@ -12,7 +12,7 @@
     const BROADCAST_MS = 5 * 60 * 1000;
     const GOLD_BROADCAST_OFFSET_MS = 1 * 60 * 1000;   // 龍鑽先喊；金幣延後 1 分鐘，兩者仍各自每 5 分鐘廣播
     const BROADCAST_PIN_MAX = 2;   // 📌 v3.5.77 叫賣訊息常駐在「系統與物品日誌」頂端的最大條數（超出者排隊，前面的人被互動/離場後自動遞補）
-    const BOARD_COOLDOWN_MS = 24 * 60 * 60 * 1000;
+    const BOARD_COOLDOWN_MS = 1 * 60 * 60 * 1000;
     const RELIC_SEARCH_COST = 100;
     const WANDERER_CHANCE = 0.50;
     const GOLD_WANDERER_CHANCE = 0.30;
@@ -1807,7 +1807,7 @@
         return `<section class="pandora-relic-board">
             <div class="pandora-relic-board-head">
                 <b>遺物布告欄</b>
-                <span>搜尋費用 ${RELIC_SEARCH_COST} 龍之鑽石・完成或取消後，該欄冷卻 24 小時</span>
+                <span>搜尋費用 ${RELIC_SEARCH_COST} 龍之鑽石・完成或取消後，該欄冷卻 1 小時</span>
             </div>
             <div class="pandora-relic-grid">${cards}</div>
         </section>`;
@@ -1878,7 +1878,7 @@
             gainItem(result.relicId, 1, true, true, false);
         }
         let d = DB.items[result.relicId];
-        _setPandoraNotice('success', `完成遺物布告，獲得${d ? d.n : '遺物'}。第 ${slotIndex + 1} 欄進入 24 小時冷卻。`);
+        _setPandoraNotice('success', `完成遺物布告，獲得${d ? d.n : '遺物'}。第 ${slotIndex + 1} 欄進入 1 小時冷卻。`);
         if (typeof logSys === 'function') logSys(`<span class="text-purple-300 font-bold">完成潘朵拉遺物布告，獲得 ${_esc(d ? d.n : result.relicId)}。</span>`);
         try { updateUI(); renderTabs(); saveGame(); } catch (e) {}
         _rerenderPandora();
@@ -1894,7 +1894,7 @@
             return { relicId: relicId };
         });
         if (!result.ok) _setPandoraNotice('error', result.error || '取消資料正忙碌，請稍後重試。');
-        else _setPandoraNotice('info', `已取消第 ${slotIndex + 1} 欄的遺物布告，該欄進入 24 小時冷卻。`);
+        else _setPandoraNotice('info', `已取消第 ${slotIndex + 1} 欄的遺物布告，該欄進入 1 小時冷卻。`);
         _rerenderPandora();
     }
 
